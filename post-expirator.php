@@ -4,7 +4,7 @@ Plugin Name: Post Expirator
 Plugin URI: http://wordpress.org/extend/plugins/post-expirator/
 Description: Allows you to add an expiration date (minute) to posts which you can configure to either delete the post, change it to a draft, or update the post categories at expiration time.
 Author: Aaron Axelsen
-Version: 2.4.0.1
+Version: 2.4.0.2
 Author URI: http://postexpirator.tuxdocs.net/
 Text Domain: post-expirator
 */
@@ -17,7 +17,7 @@ function postExpirator_init() {
 add_action('plugins_loaded', 'postExpirator_init');
 
 // Default Values
-define('POSTEXPIRATOR_VERSION','2.4.0.1');
+define('POSTEXPIRATOR_VERSION','2.4.0.2');
 define('POSTEXPIRATOR_DATEFORMAT',__('l F jS, Y','post-expirator'));
 define('POSTEXPIRATOR_TIMEFORMAT',__('g:ia','post-expirator'));
 define('POSTEXPIRATOR_FOOTERCONTENTS',__('Post expires at EXPIRATIONTIME on EXPIRATIONDATE','post-expirator'));
@@ -249,7 +249,14 @@ function expirationdate_meta_custom() {
 	foreach ($custom_post_types as $t) {
 		$defaults = get_option('expirationdateDefaults'.ucfirst($t));
 		if (!isset($defaults['activeMetaBox']) || $defaults['activeMetaBox'] == 'active') {
-			add_meta_box('expirationdatediv', __('Post Expirator','post-expirator'), 'expirationdate_meta_box', $t, 'side', 'core');
+			add_meta_box(
+					'expirationdatediv', 
+					__('Post Expirator','post-expirator'), 
+					'expirationdate_meta_box', 
+					$t, 
+					'side', 
+					'core'
+			);
 		}
 	}
 }
@@ -262,6 +269,10 @@ function expirationdate_meta_box($post) {
 	// Get default month
 	$expirationdatets = get_post_meta($post->ID,'_expiration-date',true);
 	$firstsave = get_post_meta($post->ID,'_expiration-date-status',true);
+	
+	// nonce
+	wp_nonce_field( '__postexpirator', '_postexpiratornonce' );
+
 	$default = '';
 	$expireType = '';
 	$defaults = get_option('expirationdateDefaults'.ucfirst($post->post_type));
@@ -500,20 +511,33 @@ function expirationdate_get_blog_url() {
 /**
  * Called when post is saved - stores expiration-date meta value
  */
-add_action('save_post','expirationdate_update_post_meta');
-function expirationdate_update_post_meta($id) {
+add_action('save_post','expirationdate_update_post_meta', 10, 2);
+function expirationdate_update_post_meta($id, $post) {
+	
+	// nonce check
+	if ( ! isset( $_POST[ '_postexpiratornonce' ] ) || ! wp_verify_nonce( $_POST[ '_postexpiratornonce' ], '__postexpirator' ) ) {
+		return $id;
+	}
+ 
+	// check current use permissions
+	$post_type = get_post_type_object( $post->post_type );
+ 
+	if ( ! current_user_can( $post_type->cap->edit_post, $id ) ) {
+		return $id;
+	}
+
 	// don't run the echo if this is an auto save
 	if ( defined('DOING_AUTOSAVE') && DOING_AUTOSAVE )
-		return;
+		return $id;
 
 	// don't run the echo if the function is called for saving revision.
         $posttype = get_post_type($id);
 	if ( $posttype == 'revision' )
-		return;
+		return $id;
 
 	if (!isset($_POST['expirationdate_quickedit'])) {
 		if (!isset($_POST['expirationdate_formcheck']))
-			return;
+			return $id;
 	}
 
 	if (isset($_POST['enable-expirationdate'])) {

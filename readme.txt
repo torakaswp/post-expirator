@@ -1,10 +1,10 @@
 === Post Expirator ===
-Contributors: axelseaa
+Contributors: axelseaa, torakas
 Donate link: http://aaron.axelsen.us/donate
 Tags: expire, posts, pages, schedule
 Requires at least: 4.0
-Tested up to: 5.2
-Stable tag: 2.4.0.1
+Tested up to: 5.5.1
+Stable tag: 2.4.0.2
 
 Allows you to add an expiration date to posts which you can configure to either delete the post, change it to a draft, or update the 
 post categories.
@@ -54,8 +54,14 @@ This section describes how to install the plugin and get it working.
 1. Adding expiration date to a post
 2. Viewing the exipiration dates on the post overview screen
 3. Settings screen
+4. Adding expiration date to a post (Gutenberg editor)
 
 == Changelog ==
+
+**Version 2.4.0.2**
+
+* New: Compatible with Gutenberg and Classic editor.
+* Fix: Change deprecated jQuery function '.live' to '.on'
 
 **Version 2.4.0**
 
